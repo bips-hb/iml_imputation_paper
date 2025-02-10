@@ -1,0 +1,30 @@
+Type: Package
+Package: iml.relating
+Title: Code for Paper
+Version: 0.0
+Description: Code for Repository
+License: MIT + file LICENSE
+Depends:
+    checkmate,
+    data.table,
+    ggplot2,
+    mlr3,
+    mlr3tuning,
+    mlr3learners,
+    dplyr,
+    batchtools,
+    iml,
+    here,
+    paradox,
+    parallel,
+    xgboost,
+    lmerTest,
+    tidyr,
+    kableExtra,
+    patchwork,
+    randomForest,
+    missMethods, 
+    mice,
+    missRanger, 
+    fastshap, 
+    mvtnorm
