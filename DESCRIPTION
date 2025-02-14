@@ -18,7 +18,6 @@ Depends:
     paradox,
     parallel,
     xgboost,
-    lmerTest,
     tidyr,
     kableExtra,
     patchwork,
@@ -28,3 +27,4 @@ Depends:
     missRanger, 
     fastshap, 
     mvtnorm
+RoxygenNote: 7.3.2

@@ -93,6 +93,8 @@ pred_fun = function(mod, newdata) {
   if (inherits(mod, "xgb.Booster")) {
     fnames = setdiff(colnames(newdata), "y")
     predict(mod, newdata = as.matrix(newdata[, fnames]))
+  } else if (inherits(mod, "ranger")) {
+    predict(mod, data = newdata)$predictions
   } else {
     predict(mod, newdata = newdata)
   }
@@ -429,6 +431,11 @@ get_true_pfi = function(ntrue, ntrain, gen_data, train_mod, nperm = 5){
 #' @return data.frame with PDP values
 pdp = function(dat, fh, fname, xgrid = c(0.1, 0.3, 0.5, 0.7, 0.9)){
   dat2 = dat
+  
+  if (is.null(xgrid)) {
+    xgrid = seq(min(dat[,fname]), max(dat[,fname]), length.out = 10)
+  }
+  
   res = lapply(xgrid, function(x_g){
     dat2[,fname] = x_g
     data.frame(pdp = mean(fh(dat2)),
@@ -443,10 +450,10 @@ pdp = function(dat, fh, fname, xgrid = c(0.1, 0.3, 0.5, 0.7, 0.9)){
 #' @param test_dat data.frame for MC integration
 #' @param fh prediction function
 #' @return data.frame with PDPs
-compute_pdps = function(test_dat, fh){
+compute_pdps = function(test_dat, fh, xgrid = c(0.1, 0.3, 0.5, 0.7, 0.9)){
   fnames = setdiff(colnames(test_dat), "y")
   pdps = lapply(fnames, function(fname) {
-    pdp_dat = pdp(test_dat, fh, fname)
+    pdp_dat = pdp(test_dat, fh, fname, xgrid = xgrid)
     pdp_dat$feature = fname
     pdp_dat
   })
