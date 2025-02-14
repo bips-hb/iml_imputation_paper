@@ -52,14 +52,6 @@ res_cmplt <- bootstrap_cis(model_fun = model_fun,
                            missing_prob = 0, 
                            imputation_method = "none")
 
-# PDP still problems with the grid (creates different grid for each run)
-# ggplot(res_cmplt$pdp[feature == "alcohol"], aes(x = feature_value, y = mpdp)) +
-#   #geom_point() +
-#   geom_line() +
-#   #geom_errorbar(aes(ymin = lower, ymax = upper)) +
-#   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
-#   theme_bw()
-
 # With mean imputation
 res_imp_mean <- bootstrap_cis(model_fun = model_fun, 
                               data = dat, 
@@ -92,7 +84,7 @@ res_pfi <- rbind(data.table(imputation = "complete", res_cmplt$pfi),
                  #data.table(imputation = "missForest", res_imp_mf$pfi),
                  data.table(imputation = "mice", res_imp_mice$pfi))
 #res_pfi[, imputation := factor(imputation, levels = c("complete", "mean", "missForest", "mice"))]
-lvls_ordered <- res_imp_mean$pfi[order(pfi), feature]
+lvls_ordered <- res_cmplt$pfi[order(pfi), feature]
 res_pfi[, feature := factor(feature, levels = lvls_ordered)]
 ggplot(res_pfi, aes(x = feature, y = pfi, color = imputation)) + 
   geom_point(position=position_dodge2(width=1, reverse = TRUE)) + 
@@ -108,7 +100,7 @@ res_shap <- rbind(data.table(imputation = "complete", res_cmplt$shap),
                  #data.table(imputation = "missForest", res_imp_mf$shap),
                  data.table(imputation = "mice", res_imp_mice$shap))
 #res_pfi[, imputation := factor(imputation, levels = c("complete", "mean", "missForest", "mice"))]
-lvls_ordered <- res_imp_mean$shap[order(shap), feature]
+lvls_ordered <- res_cmplt$shap[order(shap), feature]
 res_shap[, feature := factor(feature, levels = lvls_ordered)]
 ggplot(res_shap, aes(x = feature, y = shap, color = imputation)) + 
   geom_point(position=position_dodge2(width=1, reverse = TRUE)) + 
@@ -118,3 +110,20 @@ ggplot(res_shap, aes(x = feature, y = shap, color = imputation)) +
   coord_flip() + 
   theme_bw()
 
+# Plot PDP together
+res_pdp <- rbind(data.table(imputation = "complete", res_cmplt$pdp), 
+                 data.table(imputation = "mean", res_imp_mean$pdp),
+                 #data.table(imputation = "missForest", res_imp_mf$pdp),
+                data.table(imputation = "mice", res_imp_mice$pdp))
+#res_pdp[, imputation := factor(imputation, levels = c("complete", "mean", "missForest", "mice"))]
+p1 <- ggplot(res_pdp[feature == "alcohol"], aes(x = feature_value, y = mpdp, color = imputation, fill = imputation)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
+  xlab("Alcohol") + ylab("PD") +
+  theme_bw()
+p2 <- ggplot(res_pdp[feature == "volatile.acidity"], aes(x = feature_value, y = mpdp, color = imputation, fill = imputation)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
+  xlab("Volatile Acidity") + ylab("PD") +
+  theme_bw()
+p1 + p2

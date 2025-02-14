@@ -453,6 +453,9 @@ pdp = function(dat, fh, fname, xgrid = c(0.1, 0.3, 0.5, 0.7, 0.9)){
 compute_pdps = function(test_dat, fh, xgrid = c(0.1, 0.3, 0.5, 0.7, 0.9)){
   fnames = setdiff(colnames(test_dat), "y")
   pdps = lapply(fnames, function(fname) {
+    if (is.list(xgrid)) {
+      xgrid = xgrid[[fname]]
+    }
     pdp_dat = pdp(test_dat, fh, fname, xgrid = xgrid)
     pdp_dat$feature = fname
     pdp_dat

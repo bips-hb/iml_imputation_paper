@@ -81,6 +81,12 @@ bootstrap_cis = function(model_fun, data, nrefits = 15, nperm = 5,
     cols_mis = fnames
   }
   
+  # Grids for PDP
+  xgrid <- lapply(fnames, function(fname) {
+    seq(min(data[,fname]), max(data[,fname]), length.out = 10)
+  })
+  names(xgrid) <- fnames
+  
   data <- miss_fun(data, cols_mis)
   data <- impute_fun(data)
   
@@ -95,7 +101,7 @@ bootstrap_cis = function(model_fun, data, nrefits = 15, nperm = 5,
       mod = model_fun(data = train_dat)
       fh = function(x) pred_fun(mod, newdata = x)
       pfis = compute_pfis(test_dat, nperm, fh)
-      pdps = compute_pdps(test_dat, fh, xgrid = NULL)
+      pdps = compute_pdps(test_dat, fh, xgrid = xgrid)
       shaps = compute_shaps(test_dat, train_dat, fh, mod)
       perf = data.table(mse = mean((fh(test_dat) - test_dat$y)^2))
       pfis$refit_id = pdps$refit_id = shaps$refit_id = perf$refit_id = m
