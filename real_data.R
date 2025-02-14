@@ -3,7 +3,14 @@ library(iml.relating)
 library(data.table)
 library(xgboost)
 
+devtools::load_all()
+
 set.seed(2025)
+
+pattern <- "MCAR"
+missing_prob <- 0.4
+nrefits <- 15
+nperm <- 20
 
 # Get data
 dat <- fread("data/winequality-red.csv", check.names = TRUE)
@@ -39,31 +46,13 @@ rsq
 # Without missing data
 res_cmplt <- bootstrap_cis(model_fun = model_fun, 
                            data = dat, 
-                           nrefits = 15, 
-                           nperm = 5,
+                           nrefits = nrefits, 
+                           nperm = nperm,
                            pattern = "none", 
                            missing_prob = 0, 
                            imputation_method = "none")
 
-
-lvls_ordered <- res_cmplt$pfi[order(pfi), feature]
-res_cmplt$pfi[, feature := factor(feature, levels = lvls_ordered)]
-ggplot(res_cmplt$pfi, aes(x = feature, y = pfi)) + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = lower, ymax = upper)) + 
-  geom_hline(yintercept = 0, col = "red") + 
-  coord_flip() + 
-  theme_bw()
-
-lvls_ordered <- res_cmplt$shap[order(shap), feature]
-res_cmplt$shap[, feature := factor(feature, levels = lvls_ordered)]
-ggplot(res_cmplt$shap, aes(x = feature, y = shap)) + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = lower, ymax = upper)) + 
-  geom_hline(yintercept = 0, col = "red") + 
-  coord_flip() + 
-  theme_bw()
-
+# PDP still problems with the grid (creates different grid for each run)
 # ggplot(res_cmplt$pdp[feature == "alcohol"], aes(x = feature_value, y = mpdp)) +
 #   #geom_point() +
 #   geom_line() +
@@ -74,83 +63,58 @@ ggplot(res_cmplt$shap, aes(x = feature, y = shap)) +
 # With mean imputation
 res_imp_mean <- bootstrap_cis(model_fun = model_fun, 
                               data = dat, 
-                              nrefits = 15, 
-                              nperm = 5,
-                              pattern = "MNAR", 
-                              missing_prob = 0.4, 
+                              nrefits = nrefits, 
+                              nperm = nperm,
+                              pattern = pattern, 
+                              missing_prob = missing_prob, 
                               imputation_method = "mean")
 
-
-lvls_ordered <- res_imp_mean$pfi[order(pfi), feature]
-res_imp_mean$pfi[, feature := factor(feature, levels = lvls_ordered)]
-ggplot(res_imp_mean$pfi, aes(x = feature, y = pfi)) + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = lower, ymax = upper)) + 
-  geom_hline(yintercept = 0, col = "red") + 
-  coord_flip() + 
-  theme_bw()
-
-lvls_ordered <- res_imp_mean$shap[order(shap), feature]
-res_imp_mean$shap[, feature := factor(feature, levels = lvls_ordered)]
-ggplot(res_imp_mean$shap, aes(x = feature, y = shap)) + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = lower, ymax = upper)) + 
-  geom_hline(yintercept = 0, col = "red") + 
-  coord_flip() + 
-  theme_bw()
-
-# With missForest imputation
-res_imp_mf <- bootstrap_cis(model_fun = model_fun, 
-                              data = dat, 
-                              nrefits = 15, 
-                              nperm = 5,
-                              pattern = "MNAR", 
-                              missing_prob = 0.4, 
-                              imputation_method = "missForest")
-
-
-lvls_ordered <- res_imp_mf$pfi[order(pfi), feature]
-res_imp_mf$pfi[, feature := factor(feature, levels = lvls_ordered)]
-ggplot(res_imp_mf$pfi, aes(x = feature, y = pfi)) + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = lower, ymax = upper)) + 
-  geom_hline(yintercept = 0, col = "red") + 
-  coord_flip() + 
-  theme_bw()
-
-lvls_ordered <- res_imp_mf$shap[order(shap), feature]
-res_imp_mf$shap[, feature := factor(feature, levels = lvls_ordered)]
-ggplot(res_imp_mf$shap, aes(x = feature, y = shap)) + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = lower, ymax = upper)) + 
-  geom_hline(yintercept = 0, col = "red") + 
-  coord_flip() + 
-  theme_bw()
+# # With missForest imputation
+# res_imp_mf <- bootstrap_cis(model_fun = model_fun, 
+#                               data = dat, 
+#                               nrefits = nrefits, 
+#                               nperm = nperm,
+#                               pattern = pattern, 
+#                               missing_prob = missing_prob, 
+#                               imputation_method = "missForest")
 
 # With multiple imputation
 res_imp_mice <- bootstrap_cis(model_fun = model_fun, 
                               data = dat, 
-                              nrefits = 15, 
-                              nperm = 5,
-                              pattern = "MNAR", 
-                              missing_prob = 0.4, 
+                              nrefits = nrefits, 
+                              nperm = nperm,
+                              pattern = pattern, 
+                              missing_prob = missing_prob, 
                               imputation_method = "mice")
-
-
-lvls_ordered <- res_imp_mice$pfi[order(pfi), feature]
-res_imp_mice$pfi[, feature := factor(feature, levels = lvls_ordered)]
-ggplot(res_imp_mice$pfi, aes(x = feature, y = pfi)) + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = lower, ymax = upper)) + 
+# Plot PFI together
+res_pfi <- rbind(data.table(imputation = "complete", res_cmplt$pfi), 
+                 data.table(imputation = "mean", res_imp_mean$pfi),
+                 #data.table(imputation = "missForest", res_imp_mf$pfi),
+                 data.table(imputation = "mice", res_imp_mice$pfi))
+#res_pfi[, imputation := factor(imputation, levels = c("complete", "mean", "missForest", "mice"))]
+lvls_ordered <- res_imp_mean$pfi[order(pfi), feature]
+res_pfi[, feature := factor(feature, levels = lvls_ordered)]
+ggplot(res_pfi, aes(x = feature, y = pfi, color = imputation)) + 
+  geom_point(position=position_dodge2(width=1, reverse = TRUE)) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), 
+                position=position_dodge2(width=1, reverse = TRUE)) + 
   geom_hline(yintercept = 0, col = "red") + 
   coord_flip() + 
   theme_bw()
 
-lvls_ordered <- res_imp_mice$shap[order(shap), feature]
-res_imp_mice$shap[, feature := factor(feature, levels = lvls_ordered)]
-ggplot(res_imp_mice$shap, aes(x = feature, y = shap)) + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = lower, ymax = upper)) + 
+# Plot SHAP together
+res_shap <- rbind(data.table(imputation = "complete", res_cmplt$shap), 
+                 data.table(imputation = "mean", res_imp_mean$shap),
+                 #data.table(imputation = "missForest", res_imp_mf$shap),
+                 data.table(imputation = "mice", res_imp_mice$shap))
+#res_pfi[, imputation := factor(imputation, levels = c("complete", "mean", "missForest", "mice"))]
+lvls_ordered <- res_imp_mean$shap[order(shap), feature]
+res_shap[, feature := factor(feature, levels = lvls_ordered)]
+ggplot(res_shap, aes(x = feature, y = shap, color = imputation)) + 
+  geom_point(position=position_dodge2(width=1, reverse = TRUE)) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), 
+                position=position_dodge2(width=1, reverse = TRUE)) + 
   geom_hline(yintercept = 0, col = "red") + 
   coord_flip() + 
   theme_bw()
+
