@@ -117,7 +117,6 @@ plot_fun <- function(iml_method) {
       scale_y_continuous(sprintf("Confidence Interval %s", "Width")) +
       scale_x_continuous("Number of Model Refits") +
       scale_color_discrete("Imputation Method") + 
-      #geom_hline(yintercept = .95, linetype = "dashed") + 
       ggtitle(sprintf("%s (learner = %s, n = %s, sampling = %s, missing = %s, pattern = %s)", 
                       iml_method, xalgorithm, xn, xsampling_strategy, xmissing, xpattern))
   }, pars$n, pars$missing, pars$pattern, pars$algorithm, pars$sampling_strategy, SIMPLIFY = FALSE)
@@ -125,7 +124,7 @@ plot_fun <- function(iml_method) {
 
 iml_methods <- c("PFI", "PDP", "SHAP")
 pars <- data.table(expand.grid(iml_method = iml_methods, stringsAsFactors = FALSE))
-#pars <- pars[!(iml_method == "SHAP" & learner == "randomForest"), ]
+
 mapply(function(iml_method) {
   p <- plot_fun(iml_method)
   ggsave(sprintf("plots_paper/aw_refits_adjusted_geq5%s.pdf", iml_method), wrap_plots(p, ncol = 2), width = 20, height = 30, 

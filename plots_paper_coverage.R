@@ -158,7 +158,7 @@ plot_fun <- function(iml_method) {
 
 iml_methods <- c("PFI", "PDP", "SHAP")
 pars <- data.table(expand.grid(iml_method = iml_methods, stringsAsFactors = FALSE))
-#pars <- pars[!(iml_method == "SHAP" & learner == "randomForest"), ]
+
 mapply(function(iml_method) {
   p <- plot_fun(iml_method)
   ggsave(sprintf("plots_paper/coverage_paper_%s_%s.pdf", iml_method,sampling_strat), wrap_plots(p, ncol = 2), width = 20, height = 30, 

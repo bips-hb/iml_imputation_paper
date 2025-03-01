@@ -26,11 +26,6 @@ model_fun <- function(data) {
           max_depth = 2, verbose = FALSE, nthread = 1)
 }
 
-# library(ranger)
-# model_fun <- function(data) {
-#   ranger(y~., data, num.trees = 10)
-# }
-
 # Check performance
 train_ids <- sample(1:nrow(dat), size = 0.7 * nrow(dat), replace = FALSE)
 train_dat <- dat[train_ids,]
@@ -128,8 +123,7 @@ p1 <- ggplot(res_pdp[feature == "alcohol"], aes(x = feature_value, y = mpdp, col
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
   xlab("Alcohol") + ylab("Wine Quality") +
   theme_bw(base_size = 15)+
-  theme(legend.position = c(0.7, 0.2))#,  # Moves legend inside (bottom right)
-        #legend.background = element_rect(fill = "white", color = "black")) 
+  theme(legend.position = c(0.7, 0.2))#,  
 p2 <- ggplot(res_pdp[feature == "volatile.acidity"], aes(x = feature_value, y = mpdp, color = imputation, fill = imputation)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
@@ -139,7 +133,7 @@ p1 + p2
 
 
 plot_real <- plot_pfi + plot_shap +p1 
-#ggsave("plot_MAR_xgb_all_rel_freey.pdf", plot = pp, width = 210, height = 260, units = "mm", scale = 1.5)
+
 ggsave("plots_paper/real_data.pdf", width = 210, height = 100, units = "mm", scale = 1.5)
 
 #compare order
