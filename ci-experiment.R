@@ -34,11 +34,11 @@ if(file.exists(reg_name)) {
 }
 #clearRegistry(reg)
 
-# see file R/ci-experiment.R
+# see file R/utils-cis-experiment.R
 addProblem(name = "x12", data = data.frame(), fun = gdata12, seed = 1)
 addProblem(name = "x1234", data = data.frame(), fun = gdata, seed = 1)
 
-# see file R/ci-experiment.R
+# see file R/utils-cis-experiment.R
 addAlgorithm(name = "lm",  lm_wrapper)
 #addAlgorithm(name = "rpart",  rpart_wrapper)
 #addAlgorithm(name = "randomForest",  rf_wrapper)

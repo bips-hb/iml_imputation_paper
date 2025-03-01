@@ -1,12 +1,16 @@
+library(dplyr)
+library(tidyr)
 
 library(data.table)
 library(ggplot2)
 library(patchwork)
 library(foreach)
-library(dplyr)
-library(tidyr)
 
 source("R/config.R")
+
+#Set sampling parameter
+sampling_strat <- "bootstrap"
+#sampling_strat <- "subsampling"
 
 coverage_pfi_mean = readRDS(sprintf("%s/coverage_pfi_mean.Rds", res_dir))
 coverage_pdp_mean = readRDS(sprintf("%s/coverage_pdp_mean.Rds", res_dir))
@@ -71,56 +75,85 @@ coverage_pfi_mean <- add_None(coverage_pfi_mean)
 coverage_pdp_mean <- add_None(coverage_pdp_mean)
 coverage_shap_mean <- add_None(coverage_shap_mean)
 
-coverage_pfi_mean <- coverage_pfi_mean[, avg_width := mean(avg_width), 
+
+coverage_pfi_mean <- coverage_pfi_mean[, coverage := mean(coverage), 
+                                       by = list(algorithm, problem, sampling_strategy, nrefits, 
+                                                 adjusted, n, missing_prob, pattern, missing, imputation_method) # train_missing, test_missing, 
+]
+coverage_pdp_mean <- coverage_pdp_mean[, coverage := mean(coverage), 
                                        by = list(algorithm, problem, sampling_strategy, nrefits, 
                                                  adjusted, n, missing_prob, pattern, train_missing, test_missing, imputation_method)
 ]
-coverage_pdp_mean <- coverage_pdp_mean[, avg_width := mean(avg_width), 
-                                       by = list(algorithm, problem, sampling_strategy, nrefits, 
-                                                 adjusted, n, missing_prob, pattern, train_missing, test_missing, imputation_method)
-]
-coverage_shap_mean <- coverage_shap_mean[, avg_width := mean(avg_width), 
+coverage_shap_mean <- coverage_shap_mean[, coverage := mean(coverage), 
                                          by = list(algorithm, problem, sampling_strategy, nrefits, 
                                                    adjusted, n, missing_prob, pattern, train_missing, test_missing, imputation_method)
 ]
 
 plot_fun <- function(iml_method) {
   if (iml_method == "PFI") {
-    coverage_mean = coverage_pfi_mean[adjusted == TRUE & nrefits > 4,]
+    coverage_mean = coverage_pfi_mean[sampling_strategy==sampling_strat,]
   } else if (iml_method == "PDP") {
-    coverage_mean = coverage_pdp_mean[adjusted == TRUE & nrefits > 4,]
+    coverage_mean = coverage_pdp_mean[sampling_strategy==sampling_strat,]
   } else if (iml_method == "SHAP") {
-    coverage_mean = coverage_shap_mean[adjusted == TRUE & nrefits > 4,]
+    coverage_mean = coverage_shap_mean[sampling_strategy==sampling_strat,]
   } else {
     stop("Unknown iml method")
   }
   
-  pars <- expand.grid(n = unique(coverage_mean$n), 
-                      sampling_strategy = as.character(unique(coverage_mean$sampling_strategy)), 
+  coverage_mean[problem == "x12"]$problem <- "linear"
+  coverage_mean[problem == "x1234"]$problem <- "non-linear"
+  
+  pars <- expand.grid(#n = unique(coverage_mean$n), 
+                      #sampling_strategy = as.character(unique(coverage_mean$sampling_strategy)), 
                       missing = setdiff(unique(coverage_mean$missing), "None"), 
-                      pattern = setdiff(as.character(unique(coverage_mean$pattern)), "None"), 
                       algorithm = as.character(unique(coverage_mean$algorithm)),
+                      pattern = setdiff(as.character(unique(coverage_mean$pattern)), "None"), 
                       #   missing_prob = setdiff(unique(coverage_mean$missing_prob), 0), 
                       stringsAsFactors = FALSE)
-  mapply(function(xn, xmissing, xpattern, xalgorithm, xsampling_strategy) {
-    ggplot(coverage_mean[n == xn & 
-                           missing %in% c("None", xmissing) & 
-                           pattern %in% c("None", xpattern) & 
-                           algorithm %in% xalgorithm &
-                           #  missing_prob %in% c(0, xmissing_prob) & 
-                           sampling_strategy == xsampling_strategy, 
-    ],
-    aes(x = nrefits, y = avg_width, color = imputation_method, 
-        shape = adjusted, linetype = adjusted)) +
-      facet_grid(problem ~ missing_prob) + 
-      geom_line() + #geom_point() +
-      scale_y_continuous(sprintf("Confidence Interval %s", "Width")) +
-      scale_x_continuous("Number of Model Refits") +
-      scale_color_discrete("Imputation Method") + 
-      #geom_hline(yintercept = .95, linetype = "dashed") + 
-      ggtitle(sprintf("%s (learner = %s, n = %s, sampling = %s, missing = %s, pattern = %s)", 
-                      iml_method, xalgorithm, xn, xsampling_strategy, xmissing, xpattern))
-  }, pars$n, pars$missing, pars$pattern, pars$algorithm, pars$sampling_strategy, SIMPLIFY = FALSE)
+  mapply(function(xmissing, xalgorithm, xpattern){#xn, , xsampling_strategy) {
+    if(xalgorithm == "lm"){
+      ggplot(coverage_mean[missing %in% c("None", xmissing) & 
+                             algorithm %in% xalgorithm & 
+                             pattern %in% c("None", xpattern) 
+      ],
+      aes(x = nrefits, y = coverage, color = imputation_method,
+          shape = adjusted, linetype = adjusted)) +
+        facet_grid(problem ~ missing_prob) + 
+        geom_line() + 
+        scale_y_continuous(sprintf("Confidence Interval %s", "Coverage"), limits = c(0, 1)) +
+        scale_x_continuous("Number of Model Refits") +
+        scale_linetype_manual(values = c("TRUE" = "solid", "FALSE" = "dotdash"))+
+        scale_color_manual("Imputation Method", 
+                           values = c("None" = "red", "missForest" = "purple", "mice" = "darkorange3", "mice_rf" = "blue", "mean" = "forestgreen"),
+                           labels = c("None" = "Complete Data", "mice" = "MICE PMM", "mice_rf"= "MICE RF", "missForest" = "MissForest", "mean" = "Mean")) + 
+        theme_bw(base_size = 18) + 
+        theme(plot.title = element_text(size = 18),
+              legend.position = "none") + 
+        geom_hline(yintercept = .95, linetype = "dashed") + 
+        ggtitle(sprintf("%s (learner = %s, pattern = %s)", 
+                        iml_method, xalgorithm, xpattern)) 
+    }else{
+      ggplot(coverage_mean[missing %in% c("None", xmissing) & 
+                             algorithm %in% xalgorithm & 
+                             pattern %in% c("None", xpattern) 
+      ],
+      aes(x = nrefits, y = coverage, color = imputation_method,
+          shape = adjusted, linetype = adjusted)) +
+        facet_grid(problem ~ missing_prob) + 
+        geom_line() + 
+        scale_y_continuous(limits = c(0, 1)) +
+        scale_x_continuous("Number of Model Refits") +
+        scale_linetype_manual(values = c("TRUE" = "solid", "FALSE" = "dotdash"))+
+        scale_color_manual("Imputation Method", 
+                           values = c("None" = "red", "missForest" = "purple", "mice" = "darkorange3", "mice_rf" = "blue", "mean" = "forestgreen"),
+                           labels = c("None" = "Complete Data", "mice" = "MICE PMM", "mice_rf"= "MICE RF", "missForest" = "MissForest", "mean" = "Mean")) + 
+        theme_bw(base_size = 18) + 
+        theme(plot.title = element_text(size = 18),axis.title.y = element_blank())+
+        geom_hline(yintercept = .95, linetype = "dashed") +
+        ggtitle(sprintf("%s (learner = %s, pattern = %s)", 
+                        iml_method, xalgorithm, xpattern)) 
+    }
+  },pars$missing, pars$algorithm, pars$pattern, SIMPLIFY = FALSE)
 }
 
 iml_methods <- c("PFI", "PDP", "SHAP")
@@ -128,6 +161,6 @@ pars <- data.table(expand.grid(iml_method = iml_methods, stringsAsFactors = FALS
 #pars <- pars[!(iml_method == "SHAP" & learner == "randomForest"), ]
 mapply(function(iml_method) {
   p <- plot_fun(iml_method)
-  ggsave(sprintf("plots_paper/aw_refits_adjusted_geq5%s.pdf", iml_method), wrap_plots(p, ncol = 2), width = 20, height = 30, 
+  ggsave(sprintf("plots_paper/coverage_paper_%s_%s.pdf", iml_method,sampling_strat), wrap_plots(p, ncol = 2), width = 20, height = 30, 
          limitsize = FALSE)
 }, pars$iml_method, SIMPLIFY = FALSE)

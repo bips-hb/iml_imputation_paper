@@ -37,20 +37,58 @@ coverage_shap_mean[train_missing & !test_missing, missing := "Train"]
 coverage_shap_mean[!train_missing & test_missing, missing := "Test"]
 coverage_shap_mean[, missing := factor(missing)]
 
+#To integrate None in the plots, we add the same values in each setting
+df <- coverage_pfi_mean
+
+# Step 1: Extract the baseline values for imputation_method = "None"
+baseline_values <- df %>%
+  filter(imputation_method == "None") %>%
+  select(feature, algorithm, problem, sampling_strategy, nrefits, adjusted, n, 
+         coverage, avg_width, coverage_se, bias)
+
+# Step 2: Generate all possible missing_prob and pattern combinations
+unique_conditions <- df %>%
+  select(feature, algorithm, problem, sampling_strategy, nrefits, adjusted, n, 
+         missing_prob, pattern) %>%
+  distinct()
+
+# Step 3: Create full dataset ensuring "None" appears everywhere
+df_none_full <- baseline_values %>%
+  left_join(unique_conditions, by = c("feature", "algorithm", "problem", "sampling_strategy", "nrefits", "adjusted", "n")) %>%
+  mutate(imputation_method = "None", missing = "Train")
+
+# Step 4: Merge back into original dataset, ensuring no duplicates
+df_final <- df %>%
+  filter(imputation_method != "None") %>%  # Keep all existing imputation methods
+  bind_rows(df_none_full) %>%              # Add the corrected "None" values
+  arrange(feature, algorithm, problem, sampling_strategy, nrefits, adjusted, n, missing_prob, pattern, imputation_method) # Sort for clarity
+
+# Now you can use df_final for plotting
+coverage_pfi_mean <- df_final[missing_prob > 0]
+
+coverage_pfi_mean <- coverage_pfi_mean[, bias := mean(bias), 
+                                       by = list(algorithm, problem, sampling_strategy, nrefits, 
+                                                 adjusted, n, missing_prob, pattern, train_missing, test_missing, imputation_method)
+]
+coverage_pdp_mean <- coverage_pdp_mean[, bias := mean(bias), 
+                                       by = list(algorithm, problem, sampling_strategy, nrefits, 
+                                                 adjusted, n, missing_prob, pattern, train_missing, test_missing, imputation_method)
+]
+coverage_shap_mean <- coverage_shap_mean[, bias := mean(bias), 
+                                         by = list(algorithm, problem, sampling_strategy, nrefits, 
+                                                   adjusted, n, missing_prob, pattern, train_missing, test_missing, imputation_method)
+]
+
 plot_fun <- function(iml_method) {
   if (iml_method == "PFI") {
-    coverage_mean = coverage_pfi_mean[nrefits == 15 & adjusted == TRUE, ]
+    coverage_mean = coverage_pfi_mean[adjusted == TRUE,]
   } else if (iml_method == "PDP") {
-    coverage_mean = coverage_pdp_mean[nrefits == 15 & adjusted == TRUE, ]
+    coverage_mean = coverage_pdp_mean[adjusted == TRUE,]
   } else if (iml_method == "SHAP") {
-    coverage_mean = coverage_shap_mean[nrefits == 15 & adjusted == TRUE, ]
+    coverage_mean = coverage_shap_mean[adjusted == TRUE,]
   } else {
     stop("Unknown iml method")
   }
-  
-  coverage_mean <- coverage_mean[, .(avg_width = mean(avg_width)), 
-                                 by = .(n, problem, algorithm, sampling_strategy, missing,
-                                        missing_prob, pattern, imputation_method)]
   
   pars <- expand.grid(n = unique(coverage_mean$n), 
                       sampling_strategy = as.character(unique(coverage_mean$sampling_strategy)), 
@@ -67,16 +105,14 @@ plot_fun <- function(iml_method) {
                            #  missing_prob %in% c(0, xmissing_prob) & 
                            sampling_strategy == xsampling_strategy, 
     ],
-    aes(x = missing_prob, y = avg_width, color = imputation_method)) +
-      facet_wrap(~ problem) + 
-      geom_line() + 
-      geom_point() + 
-      #geom_boxplot() + 
-      #coord_flip() + 
-      #scale_y_continuous(sprintf("Confidence Interval %s", "Coverage"), limits = c(0, 1)) +
-      #scale_x_continuous("Number of Model Refits") +
+    aes(x = nrefits, y = bias, color = imputation_method, 
+        shape = adjusted, linetype = adjusted)) +
+      facet_grid(problem ~ missing_prob) + 
+      geom_line() + #geom_point() +
+      scale_y_continuous(sprintf("Confidence Interval %s", "Width")) +
+      scale_x_continuous("Number of Model Refits") +
       scale_color_discrete("Imputation Method") + 
-      #geom_hline(yintercept = 0) + 
+      #geom_hline(yintercept = .95, linetype = "dashed") + 
       ggtitle(sprintf("%s (learner = %s, n = %s, sampling = %s, missing = %s, pattern = %s)", 
                       iml_method, xalgorithm, xn, xsampling_strategy, xmissing, xpattern))
   }, pars$n, pars$missing, pars$pattern, pars$algorithm, pars$sampling_strategy, SIMPLIFY = FALSE)
@@ -87,7 +123,6 @@ pars <- data.table(expand.grid(iml_method = iml_methods, stringsAsFactors = FALS
 #pars <- pars[!(iml_method == "SHAP" & learner == "randomForest"), ]
 mapply(function(iml_method) {
   p <- plot_fun(iml_method)
-  ggsave(sprintf("%s/width_%s.pdf", fig_dir, iml_method), wrap_plots(p, ncol = 2), width = 20, height = 20, 
+  ggsave(sprintf("%s/bias_refits_adjusted%s.pdf", fig_dir, iml_method), wrap_plots(p, ncol = 2), width = 20, height = 30, 
          limitsize = FALSE)
 }, pars$iml_method, SIMPLIFY = FALSE)
-

@@ -39,11 +39,11 @@ coverage_shap_mean[, missing := factor(missing)]
 
 plot_fun <- function(iml_method) {
   if (iml_method == "PFI") {
-    coverage_mean = coverage_pfi_mean[nrefits == 20, ]
+    coverage_mean = coverage_pfi_mean[nrefits == 15 & adjusted == TRUE, ]
   } else if (iml_method == "PDP") {
-    coverage_mean = coverage_pdp_mean[nrefits == 20, ]
+    coverage_mean = coverage_pdp_mean[nrefits == 15 & adjusted == TRUE, ]
   } else if (iml_method == "SHAP") {
-    coverage_mean = coverage_shap_mean[nrefits == 20, ]
+    coverage_mean = coverage_shap_mean[nrefits == 15 & adjusted == TRUE, ]
   } else {
     stop("Unknown iml method")
   }

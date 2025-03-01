@@ -11,9 +11,6 @@ source("R/config.R")
 coverage_pfi_mean = readRDS(sprintf("%s/coverage_pfi_mean.Rds", res_dir))
 coverage_pdp_mean = readRDS(sprintf("%s/coverage_pdp_mean.Rds", res_dir))
 coverage_shap_mean = readRDS(sprintf("%s/coverage_shap_mean.Rds", res_dir))
-#coverage_pfi_mean = readRDS(sprintf("%s/coverage_pfi_mean_new.Rds", res_dir))
-#coverage_pdp_mean = readRDS(sprintf("%s/coverage_pdp_mean_new.Rds", res_dir))
-#coverage_shap_mean = readRDS(sprintf("%s/coverage_shap_mean_new.Rds", res_dir))
 
 coverage_pfi_mean[!train_missing & !test_missing, imputation_method := "None"]
 coverage_pfi_mean[!train_missing & !test_missing, missing_prob := 0]
@@ -77,8 +74,8 @@ coverage_shap_mean <- add_None(coverage_shap_mean)
 # Coverage ---------------------------------------------------------------------
 
 coverage_pfi_mean <- coverage_pfi_mean[, coverage := mean(coverage), 
-                                      by = list(algorithm, problem, sampling_strategy, nrefits, 
-                                                adjusted, n, missing_prob, pattern, missing, imputation_method) # train_missing, test_missing, 
+                                       by = list(algorithm, problem, sampling_strategy, nrefits, 
+                                                 adjusted, n, missing_prob, pattern, missing, imputation_method) # train_missing, test_missing, 
 ]
 
 coverage_pdp_mean <- coverage_pdp_mean[, coverage := mean(coverage), 
@@ -87,8 +84,8 @@ coverage_pdp_mean <- coverage_pdp_mean[, coverage := mean(coverage),
 ]
 
 coverage_shap_mean<- coverage_shap_mean[, coverage := mean(coverage), 
-                                         by = list(algorithm, problem, sampling_strategy, nrefits, 
-                                                   adjusted, n, missing_prob, pattern, missing, imputation_method)
+                                        by = list(algorithm, problem, sampling_strategy, nrefits, 
+                                                  adjusted, n, missing_prob, pattern, missing, imputation_method)
 ]
 
 coverage_pfi_mean$iml_method <- "PFI"
@@ -109,7 +106,7 @@ coverage_mean[problem == "x1234"]$problem <- "non-linear"
 
 #plot coverage over different iml_methods and problem
 p1 <- ggplot(coverage_mean, aes(x = nrefits, y = coverage, color = imputation_method,
-    shape = adjusted, linetype = adjusted)) +
+                                shape = adjusted, linetype = adjusted)) +
   facet_grid(problem ~ iml_method) + 
   geom_line() + 
   scale_y_continuous(sprintf("Confidence Interval %s", "Coverage"), limits = c(0, 1)) +
@@ -117,14 +114,14 @@ p1 <- ggplot(coverage_mean, aes(x = nrefits, y = coverage, color = imputation_me
   #scale_color_discrete("Imputation Method") + 
   scale_linetype_manual(values = c("TRUE" = "solid", "FALSE" = "dotdash"))+
   scale_color_manual("Imputation Method", 
-      values = c("None" = "red", "missForest" = "purple", "mice" = "darkorange3", "mice_rf" = "blue", "mean" = "forestgreen"),
-      labels = c("None" = "Complete Data", "mice" = "MICE PMM", "mice_rf"= "MICE RF", "missForest" = "MissForest", "mean" = "Mean")) + 
-  theme_bw(base_size = 18) + 
-  theme(plot.title = element_text(size = 18))+
+                     values = c("None" = "red", "missForest" = "purple", "mice" = "darkorange3", "mice_rf" = "blue", "mean" = "forestgreen"),
+                     labels = c("None" = "Complete Data", "mice" = "MICE PMM", "mice_rf"= "MICE RF", "missForest" = "MissForest", "mean" = "Mean")) + 
+  theme_bw(base_size = 24) + 
+  #theme(plot.title = element_text(size = 18))+
   geom_hline(yintercept = .95, linetype = "dashed") + 
-  ggtitle("a) Coverage: learner = XGBoost, pattern = MAR, mis. = 0.4")#IML Methods for XGBoost with 40% Missingness (MAR)")
+  ggtitle("Coverage: learner = XGBoost, pattern = MAR, mis. = 0.4")#IML Methods for XGBoost with 40% Missingness (MAR)")
 
-#ggsave("plots_paper/coverage_xgb_MAR_04.pdf", width = 210, height = 120, units = "mm", scale = 2) #width = 20, height = 10, limitsize = FALSE)
+ggsave("plots_paper/coverage_xgb_MAR_04.pdf", width = 210, height = 120, units = "mm", scale = 2) #width = 20, height = 10, limitsize = FALSE)
 
 
 # Average width ----------------------------------------------------------------
@@ -135,13 +132,13 @@ width_shap_mean <- coverage_shap_mean[nrefits == 15 & adjusted == TRUE]# & sampl
 
 
 width_pfi_mean <- width_pfi_mean[,  avg_width := mean(avg_width), 
-                                       by = list(algorithm, problem, sampling_strategy, #nrefits, adjusted, 
-                                                 n, missing_prob, pattern, missing, imputation_method) 
+                                 by = list(algorithm, problem, sampling_strategy, #nrefits, adjusted, 
+                                           n, missing_prob, pattern, missing, imputation_method) 
 ]
 
 width_pdp_mean <- width_pdp_mean[, avg_width := mean(avg_width), 
-                                       by = list(algorithm, problem, sampling_strategy, #nrefits, adjusted, 
-                                                 n, missing_prob, pattern, missing, imputation_method)
+                                 by = list(algorithm, problem, sampling_strategy, #nrefits, adjusted, 
+                                           n, missing_prob, pattern, missing, imputation_method)
 ]
 
 width_shap_mean <- width_shap_mean[, avg_width := mean(avg_width), 
@@ -166,94 +163,43 @@ p2 <- ggplot(width_mean, aes(x = missing_prob, y = avg_width, color = imputation
   facet_grid(iml_method ~ problem, scales = "free")+#facet_grid(problem ~ iml_method, scales = "free") + #, scales = "free_y"
   geom_line() + 
   geom_point() + 
-  theme_bw(base_size = 18)+
-  theme(plot.title = element_text(size = 18))+
+  theme_bw(base_size = 24)+
+  #theme(plot.title = element_text(size = 18))+
   scale_color_discrete("Imputation Method") + 
   scale_color_manual("Imputation Method", 
                      values = c("None" = "red", "missForest" = "purple", "mice" = "darkorange3", "mice_rf" = "blue", "mean" = "forestgreen"),
                      labels = c("None" = "Complete Data", "mice" = "MICE PMM", "mice_rf"= "MICE RF", "missForest" = "MissForest", "mean" = "Mean")) + 
   labs(x = "Missingness Proportions",  y = "Average CI Width")+
-  ggtitle("b) Average width: learner = XGBoost, pattern = MAR, nrefits = 15") 
+  ggtitle("Average CI width: learner = XGBoost, pattern = MAR, nrefits = 15") 
 
-#ggplot(width_mean, aes(x = missing_prob, y = avg_width, color = imputation_method)) +
-#  facet_wrap(problem ~ iml_method, scales = "free")+ #facet_grid(problem ~ iml_method, scales = "free_y") + #, scales = "free_y"
-#  geom_line() + 
-#  geom_point() + 
-#  theme_bw(base_size = 18)+
-#  theme(plot.title = element_text(size = 18))+
-#  scale_color_discrete("Imputation Method") + 
-#  scale_color_manual("Imputation Method", 
-#                     values = c("None" = "red", "missForest" = "purple", "mice" = "darkorange3", "mice_rf" = "blue", "mean" = "forestgreen"),
-#                     labels = c("None" = "Complete Data", "mice" = "MICE PMM", "mice_rf"= "MICE RF", "missForest" = "MissForest", "mean" = "Mean")) + 
-#  labs(x = "Missingness Proportions",  y = "Average CI Width")+
-#  ggtitle("b) Average width: learner = XGBoost, pattern = MAR, nrefits = 15") #IML Methods for XGBoost over missingness proportions for 15 refits (MAR)")
-
-#ggsave("plots_paper/width_xgb_MAR.pdf", width = 210, height = 120, units = "mm", scale = 2)
+ggsave("plots_paper/width_xgb_MAR.pdf", width = 210, height = 120, units = "mm", scale = 2)
 
 
 # Bias -------------------------------------------------------------------------
-#Calculate relative Bias
-#load results
-coverage_pfi_mean_new = coverage_pfi_mean #readRDS(sprintf("%s/coverage_pfi_mean_new.Rds", res_dir))
-coverage_pdp_mean_new = coverage_pdp_mean #readRDS(sprintf("%s/coverage_pdp_mean_new.Rds", res_dir))
-coverage_shap_mean_new = coverage_shap_mean #readRDS(sprintf("%s/coverage_shap_mean_new.Rds", res_dir))
 
-# =============================================================================
-#coverage_pfi_mean_new[!train_missing & !test_missing, imputation_method := "None"]
-#coverage_pfi_mean_new[!train_missing & !test_missing, missing_prob := 0]
-#coverage_pfi_mean_new[!train_missing & !test_missing, pattern := "None"]
-#coverage_pfi_mean_new[, missing := "None"]
-#coverage_pfi_mean_new[train_missing & test_missing, missing := "Both"]
-#coverage_pfi_mean_new[train_missing & !test_missing, missing := "Train"]
-#coverage_pfi_mean_new[!train_missing & test_missing, missing := "Test"]
-#coverage_pfi_mean_new[, missing := factor(missing)]
-
-#coverage_pdp_mean_new[!train_missing & !test_missing, imputation_method := "None"]
-#coverage_pdp_mean_new[!train_missing & !test_missing, missing_prob := 0]
-#coverage_pdp_mean_new[!train_missing & !test_missing, pattern := "None"]
-#coverage_pdp_mean_new[, missing := "None"]
-#coverage_pdp_mean_new[train_missing & test_missing, missing := "Both"]
-#coverage_pdp_mean_new[train_missing & !test_missing, missing := "Train"]
-#coverage_pdp_mean_new[!train_missing & test_missing, missing := "Test"]
-#coverage_pdp_mean_new[, missing := factor(missing)]
-
-#coverage_shap_mean_new[!train_missing & !test_missing, imputation_method := "None"]
-#coverage_shap_mean_new[!train_missing & !test_missing, missing_prob := 0]
-#coverage_shap_mean_new[!train_missing & !test_missing, pattern := "None"]
-#coverage_shap_mean_new[, missing := "None"]
-#coverage_shap_mean_new[train_missing & test_missing, missing := "Both"]
-#coverage_shap_mean_new[train_missing & !test_missing, missing := "Train"]
-#coverage_shap_mean_new[!train_missing & test_missing, missing := "Test"]
-#coverage_shap_mean_new[, missing := factor(missing)]
-
-#coverage_pfi_mean_new <- add_None(coverage_pfi_mean_new)
-#coverage_pdp_mean_new <- add_None(coverage_pdp_mean_new)
-#coverage_shap_mean_new <- add_None(coverage_shap_mean_new)
+bias_pfi_mean  <- coverage_pfi_mean[nrefits == 15 & adjusted == TRUE]
+bias_pdp_mean <- coverage_pdp_mean[nrefits == 15 & adjusted == TRUE]
+bias_shap_mean <- coverage_shap_mean[nrefits == 15 & adjusted == TRUE]
 
 
-bias_pfi_mean_new <- coverage_pfi_mean_new[nrefits == 15 & adjusted == TRUE]
-bias_pdp_mean_new <- coverage_pdp_mean_new[nrefits == 15 & adjusted == TRUE]
-bias_shap_mean_new <- coverage_shap_mean_new[nrefits == 15 & adjusted == TRUE]
-
-
-bias_pfi_mean <- bias_pfi_mean_new[,  bias := mean(bias), 
-                                 by = list(algorithm, problem, sampling_strategy, 
-                                           n, missing_prob, pattern, missing, imputation_method) 
+bias_pfi_mean <- bias_pfi_mean[,  bias := mean(bias), 
+                                   by = list(algorithm, problem, sampling_strategy, 
+                                             n, missing_prob, pattern, missing, imputation_method) 
 ]
 
-bias_pdp_mean <- bias_pdp_mean_new[, bias := mean(bias), 
-                                 by = list(algorithm, problem, sampling_strategy, #nrefits, adjusted, 
-                                           n, missing_prob, pattern, missing, imputation_method)
-]
-
-bias_shap_mean <- bias_shap_mean_new[, bias := mean(bias), 
+bias_pdp_mean <- bias_pdp_mean[, bias := mean(bias), 
                                    by = list(algorithm, problem, sampling_strategy, #nrefits, adjusted, 
                                              n, missing_prob, pattern, missing, imputation_method)
 ]
 
-bias_pfi_mean <- bias_pfi_mean_new[nrefits == 15 & adjusted == TRUE & sampling_strategy == "bootstrap" & algorithm == "xgboost" & pattern == "MAR", ]
-bias_pdp_mean <- bias_pdp_mean_new[nrefits == 15 & adjusted == TRUE & sampling_strategy == "bootstrap" & algorithm == "xgboost" & pattern == "MAR", ]
-bias_shap_mean <- bias_shap_mean_new[nrefits == 15 & adjusted == TRUE & sampling_strategy == "bootstrap" & algorithm == "xgboost" & pattern == "MAR", ]
+bias_shap_mean <- bias_shap_mean[, bias := mean(bias), 
+                                     by = list(algorithm, problem, sampling_strategy, #nrefits, adjusted, 
+                                               n, missing_prob, pattern, missing, imputation_method)
+]
+
+bias_pfi_mean <- bias_pfi_mean[nrefits == 15 & adjusted == TRUE & sampling_strategy == "bootstrap" & algorithm == "xgboost" & pattern == "MAR", ]
+bias_pdp_mean <- bias_pdp_mean[nrefits == 15 & adjusted == TRUE & sampling_strategy == "bootstrap" & algorithm == "xgboost" & pattern == "MAR", ]
+bias_shap_mean <- bias_shap_mean[nrefits == 15 & adjusted == TRUE & sampling_strategy == "bootstrap" & algorithm == "xgboost" & pattern == "MAR", ]
 
 bias_pfi_mean$iml_method <- "PFI"
 bias_pdp_mean$iml_method <- "PDP"
@@ -269,28 +215,18 @@ p3 <- ggplot(bias_mean, aes(x = missing_prob, y = bias, color = imputation_metho
   geom_line() + 
   geom_point() + 
   theme_bw(base_size = 18)+
-  theme(plot.title = element_text(size = 18))+
+  #theme(plot.title = element_text(size = 18))+
   scale_color_discrete("Imputation Method") + 
   scale_color_manual("Imputation Method", 
                      values = c("None" = "red", "missForest" = "purple", "mice" = "darkorange3", "mice_rf" = "blue", "mean" = "forestgreen"),
                      labels = c("None" = "Complete Data", "mice" = "MICE PMM", "mice_rf"= "MICE RF", "missForest" = "MissForest", "mean" = "Mean")) + 
   labs(x = "Missingness Proportions",  y = "Bias")+
-  ggtitle("c) Bias: learner = XGBoost, pattern = MAR, nrefits = 15")#IML Methods for XGBoost over missingness proportions for 15 refits (MAR)")
+  ggtitle("Bias: learner = XGBoost, pattern = MAR, nrefits = 15")#IML Methods for XGBoost over missingness proportions for 15 refits (MAR)")
 
-p3
+#ggsave("plots_paper/bias_xgb_MAR.pdf", width = 210, height = 120, units = "mm", scale = 2)
+ggsave("plots_paper/bias_xgb_MAR.pdf", width = 210, height = 100, units = "mm", scale = 1.5)
 
-ggsave("plots_paper/bias_xgb_MAR.pdf", width = 210, height = 120, units = "mm", scale = 2)
+#pp <- p1 / p2 / p3 + 
+#  plot_layout(heights = c(1.4, 1, 1))  # Slightly bigger first plot
 
-#pp <- p1 /p2/p3
-#pp
-
-
-##ggsave("plot_MAR_xgb_all.pdf", plot = pp, width = 210, height = 340, units = "mm", scale = 1.5) 
-#ggsave("plot_MAR_xgb_all.pdf", plot = pp, width = 210, height = 260, units = "mm", scale = 1.5) 
-
-pp <- p1 / p2 / p3 + 
-  plot_layout(heights = c(1.4, 1, 1))  # Slightly bigger first plot
-
-# Save the plot
-ggsave("plot_MAR_xgb_free_scales.pdf", plot = pp, width = 210, height = 260, units = "mm", scale = 1.5)
-
+#ggsave("plot_MAR_xgb_free_scales.pdf", plot = pp, width = 210, height = 260, units = "mm", scale = 1.5)
