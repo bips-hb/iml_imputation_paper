@@ -90,8 +90,7 @@ plot_pfi <- ggplot(res_pfi, aes(x = feature, y = pfi, color = imputation)) +
   geom_hline(yintercept = 0, col = "red") + 
   coord_flip() + 
   theme_bw(base_size = 18)+
-  theme(legend.position = "none")+
-  #theme(legend.position = c(0.7, 0.2))+
+  theme(legend.position = c(0.7, 0.2), legend.text = element_text(size = 12))+
   labs(x=NULL, y="PFI")
 plot_pfi
 # Plot SHAP together
@@ -109,7 +108,7 @@ plot_shap <- ggplot(res_shap, aes(x = feature, y = shap, color = imputation)) +
   geom_hline(yintercept = 0, col = "red") + 
   coord_flip() + 
   theme_bw(base_size = 18)+
-  theme(legend.position = c(0.7, 0.2), legend.text = element_text(size = 12), legend.title = element_blank() )+
+  theme(legend.position = c(0.7, 0.2), legend.text = element_text(size = 12))+
   labs(x = NULL, y="SHAP")
 plot_shap
 # Plot PDP together
