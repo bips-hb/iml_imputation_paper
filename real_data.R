@@ -89,7 +89,7 @@ plot_pfi <- ggplot(res_pfi, aes(x = feature, y = pfi, color = imputation)) +
                 position=position_dodge2(width=1, reverse = TRUE)) + 
   geom_hline(yintercept = 0, col = "red") + 
   coord_flip() + 
-  theme_bw(base_size = 18)+
+  theme_bw(base_size = 15)+
   theme(legend.position = c(0.7, 0.2), legend.text = element_text(size = 12))+
   labs(x=NULL, y="PFI")
 plot_pfi
@@ -107,7 +107,7 @@ plot_shap <- ggplot(res_shap, aes(x = feature, y = shap, color = imputation)) +
                 position=position_dodge2(width=1, reverse = TRUE)) + 
   geom_hline(yintercept = 0, col = "red") + 
   coord_flip() + 
-  theme_bw(base_size = 18)+
+  theme_bw(base_size = 15)+
   theme(legend.position = c(0.7, 0.2), legend.text = element_text(size = 12))+
   labs(x = NULL, y="SHAP")
 plot_shap
@@ -122,12 +122,12 @@ p1 <- ggplot(res_pdp[feature == "alcohol"], aes(x = feature_value, y = mpdp, col
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
   xlab("Alcohol") + ylab("Wine Quality") +
   theme_bw(base_size = 15)+
-  theme(legend.position = c(0.7, 0.2))#,  
+  theme(legend.position = c(0.7, 0.2))  
 p2 <- ggplot(res_pdp[feature == "volatile.acidity"], aes(x = feature_value, y = mpdp, color = imputation, fill = imputation)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
   xlab("Volatile Acidity") + ylab("PD") +
-  theme_bw(base_size = 18)
+  theme_bw(base_size = 15)
 p1 + p2
 
 
